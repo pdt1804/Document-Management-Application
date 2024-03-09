@@ -10,12 +10,17 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.demo.modules.email.EmailService;
+import com.example.demo.modules.information.InformationService;
+import com.example.demo.modules.jwt.JwtService;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.api.client.http.HttpRequest;
 import com.google.api.core.ApiFuture;
 import com.google.cloud.firestore.DocumentReference;
 import com.google.cloud.firestore.DocumentSnapshot;
 import com.google.cloud.firestore.Firestore;
 import com.google.firebase.cloud.FirestoreClient;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 @RestController
 @RequestMapping("/api/user")
@@ -24,17 +29,22 @@ public class UserController {
 	@Autowired
 	private UserService userService;
 	
-	@Autowired
+	@Autowired 
 	private EmailService emailService;
 	
+	@Autowired
+	private InformationService informationService;
+	
+	@Autowired 
+	private JwtService jwtService;
+	
 	@GetMapping("/authenticate")
-	public ResponseEntity<User> Authenticate(@RequestParam("userName") String userName, @RequestParam("passWord") String passWord)
+	public ResponseEntity<UserDTO> Authenticate(@RequestParam("userName") String userName, @RequestParam("passWord") String passWord)
 	{
 		try {
 			if (!userName.isEmpty() && !userName.isBlank())
 			{
-				User user = userService.Authenticate(userName, passWord);
-				return ResponseEntity.ok(user);
+				return ResponseEntity.ok(new UserDTO(userService.Authenticate(userName, passWord), jwtService.generateToken(userName), informationService));
 			}
 			else
 			{

@@ -1,9 +1,14 @@
 package com.example.demo.modules.user;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import com.example.demo.modules.information.Information;
+import com.example.demo.modules.jwt.JwtService;
 import com.google.api.core.ApiFuture;
 import com.google.cloud.firestore.DocumentReference;
 import com.google.cloud.firestore.DocumentSnapshot;
@@ -17,20 +22,24 @@ public class UserService {
 	@Autowired
 	private Firestore firestore;
 	
+	@Autowired
+	private AuthenticationManager authenticationManager;
+	
+	@Autowired 
+	private JwtService jwtService;
+	
+	@Autowired
+	private PasswordEncoder passwordEncoder;
+	
 	public User Authenticate(String userName, String passWord)
 	{
 		try 
 		{
-			DocumentReference documentRef = firestore.collection("User").document(userName);
-			ApiFuture<DocumentSnapshot> future = documentRef.get();
-			DocumentSnapshot document = future.get();
-			if (document.exists())
+			Authentication authenticate = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(userName, passWord));
+			
+			if (authenticate.isAuthenticated())
 			{
-				User user = document.toObject(User.class);
-				if (user.getPassWord().equals(passWord))
-				{
-					return user;
-				}
+				return GetUser(userName);
 			}
 			
 			return null;
@@ -68,6 +77,7 @@ public class UserService {
 	{
 		try 
 		{
+			user.setPassWord(passwordEncoder.encode(user.getPassWord()));
 			int informationID = (int)(firestore.collection("Information").count().get().get().getCount() + 1);
 			Information information = new Information();
 			information.setInformationID(informationID);
@@ -92,9 +102,9 @@ public class UserService {
 		try {
 			var user = GetUser(userName);
 
-			if (changePassword.vertification(user.getPassWord()))
+			if (changePassword.Vertification(userName, authenticationManager))
 			{
-				user.setPassWord(changePassword.getNewPassWord());
+				user.setPassWord(passwordEncoder.encode(changePassword.getNewPassWord()));
 				firestore.collection("User").document(user.getUserName()).set(user);
 				return "Success";
 			}
@@ -127,7 +137,7 @@ public class UserService {
 		try 
 		{
 			var user = GetUser(userName);
-			user.setPassWord(newPassWord);
+			user.setPassWord(passwordEncoder.encode(newPassWord));
 			firestore.collection("User").document(user.getUserName()).set(user);
 			return "Success";
 		} catch (Exception e) {

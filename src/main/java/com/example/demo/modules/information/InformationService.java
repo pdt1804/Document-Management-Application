@@ -38,9 +38,15 @@ public class InformationService {
 		}
 	}
 	
-	public void ChangeInformation(Information information)
+	public String ChangeInformation(Information information)
 	{
-		firestore.collection("Information").document(String.valueOf(information.getInformationID())).set(information);
+		try {
+			firestore.collection("Information").document(String.valueOf(information.getInformationID())).set(information);
+			return "Success";
+		} catch (Exception e) {
+			e.printStackTrace();
+			return "Failed";
+		}
 	}
 }
 
