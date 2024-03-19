@@ -19,7 +19,7 @@ import com.example.demo.modules.jwt.JwtService;
 import jakarta.servlet.http.HttpServletRequest;
 
 @RestController
-@RequestMapping("/api/folder")
+@RequestMapping("/api/file")
 public class FolderController {
 
 	@Autowired
@@ -38,21 +38,28 @@ public class FolderController {
         return userName;
 	}
 	
-	@PostMapping("/create") // location property which used to check if folder is belonged to another folder. 
-	public ResponseEntity<Folder> CreateFolder(@RequestBody Folder folder, HttpServletRequest request) 
+	@PostMapping("/createFolder") // location property which used to check if folder is belonged to another folder. 
+	public ResponseEntity<File> CreateFolder(@RequestBody File folder, HttpServletRequest request) 
 			throws ExecutionException, InterruptedException
 	{
 		return ResponseEntity.ok(folderService.CreateFolder(folder, extractToken(request)));
 	}
 	
-	@PutMapping("/update") // Update Folder Name and location
-	public ResponseEntity<String> UpdateFolder(@RequestBody Folder folder, HttpServletRequest request) 
+	@PutMapping("/updateFolder") // Update Folder Name 
+	public ResponseEntity<String> UpdateFolder(@RequestBody File folder, HttpServletRequest request) 
 			throws ExecutionException, InterruptedException
 	{
 		return ResponseEntity.ok(folderService.UpdateFolderName(folder, extractToken(request)));
 	}
 	
-	@DeleteMapping("/delete") 
+	@PutMapping("/moveToAnotherFolder") // Update Folder/File Location (Copy - Paste)
+	public ResponseEntity<String> MoveToAnotherFolder(@RequestParam("folderID") int folderID, @RequestParam("newFolderID") int newFolderID, HttpServletRequest request) 
+			throws ExecutionException, InterruptedException
+	{
+		return ResponseEntity.ok(folderService.MoveToAnotherFolder(folderID, newFolderID, extractToken(request)));
+	}
+	
+	@DeleteMapping("/deleteFolder") 
 	public ResponseEntity<String> DeleteFolder(@RequestParam("folderID") int folderID, HttpServletRequest request) 
 			throws ExecutionException, InterruptedException
 	{
@@ -60,7 +67,7 @@ public class FolderController {
 	}
 	
 	@GetMapping("/getAllFolderOfUser") 
-	public ResponseEntity<List<Folder>> GetAllFolderOfUser(HttpServletRequest request) 
+	public ResponseEntity<List<FileDTO>> GetAllFolderOfUser(HttpServletRequest request) 
 			throws ExecutionException, InterruptedException
 	{
 		return ResponseEntity.ok(folderService.GetAllFolderOfUser(extractToken(request)));

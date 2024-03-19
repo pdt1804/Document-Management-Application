@@ -10,9 +10,13 @@ import org.springframework.context.annotation.Configuration;
 import com.example.demo.DocumentManagementApplication;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.cloud.firestore.Firestore;
+import com.google.cloud.storage.Bucket;
+import com.google.cloud.storage.Storage;
+import com.google.cloud.storage.StorageOptions;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.FirebaseOptions;
 import com.google.firebase.cloud.FirestoreClient;
+import com.google.firebase.cloud.StorageClient;
 
 import jakarta.annotation.PostConstruct;
 
@@ -31,9 +35,12 @@ public class FirebaseConfig {
 			FirebaseOptions options = new FirebaseOptions.Builder()
 					  .setCredentials(GoogleCredentials.fromStream(serviceAccount))
 					  .setDatabaseUrl("https://documentmanagement-737c7-default-rtdb.firebaseio.com")
+					  .setStorageBucket("documentmanagement-737c7.appspot.com")
 					  .build();
 
 			FirebaseApp.initializeApp(options);
+			
+	        
 		}
 		catch (Exception e)
 		{
@@ -46,4 +53,6 @@ public class FirebaseConfig {
 	{
 		return FirestoreClient.getFirestore();
 	}
+	
+	
 }

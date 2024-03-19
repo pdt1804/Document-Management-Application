@@ -1,19 +1,19 @@
 package com.example.demo.modules.folder;
 
-
 import java.util.Date;
 
 import lombok.Data;
 
 @Data
-public class Folder {
+public class File {
 
-	private int folderID;
-	private String folderName;
+	private int fileID;
+	private String fileName;
 	private String createdUser;
+	private String url;
 	private Date createdTime;
 	private Date updatedTime;
 	private int location;
 	private double size;
-	
+	private FileType type;
 }
