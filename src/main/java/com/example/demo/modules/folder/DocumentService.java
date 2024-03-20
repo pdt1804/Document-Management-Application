@@ -32,7 +32,8 @@ public class DocumentService {
 	
 	public String CreateDocument(MultipartFile doc, String userName, int folderID) throws IOException, InterruptedException, ExecutionException {
 		Random rd = new Random();
-        String fileName = doc.getName() + "-" + userName + "-" + rd.nextInt(1, 9999999) + "=" + rd.nextInt(1, 9999999);
+        String fileName = doc.getName() + "-" + userName + "-" + rd.nextInt(1, 9999999) + "-" + rd.nextInt(1, 9999999);
+        String url = "https://firebasestorage.googleapis.com/v0/b/" + firestore.getOptions().getProjectId() + ".appspot.com/o/" + fileName + "?alt=media";
 		Bucket bucket = StorageClient.getInstance().bucket();
         var blob = bucket.create(fileName, doc.getBytes(), doc.getContentType());
         
@@ -44,7 +45,7 @@ public class DocumentService {
         if (folderID != 0) file.setLocation(folderID);
         else file.setLocation(0);
         file.setSize(blob.getSize());
-        file.setUrl(blob.getMediaLink());
+        file.setUrl(url);
         file.setUpdatedTime(new Date());
         
         FileType type;
@@ -68,7 +69,7 @@ public class DocumentService {
 		
 		UpdateSize(file.getSize(), folderID, "+");
         
-		return blob.getMediaLink();
+		return url;
 	}
 	
 	public void UpdateSize(double size, int folderID, String calculation) throws IOException, InterruptedException, ExecutionException {
