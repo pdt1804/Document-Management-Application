@@ -32,7 +32,7 @@ public class DocumentService {
 	
 	public String CreateDocument(MultipartFile doc, String userName, int folderID) throws IOException, InterruptedException, ExecutionException {
 		Random rd = new Random();
-        String fileName = doc.getName() + "-" + userName + "-" + rd.nextInt(1, 999999);
+        String fileName = doc.getName() + "-" + userName + "-" + rd.nextInt(1, 9999999) + "=" + rd.nextInt(1, 9999999);
 		Bucket bucket = StorageClient.getInstance().bucket();
         var blob = bucket.create(fileName, doc.getBytes(), doc.getContentType());
         
@@ -63,32 +63,38 @@ public class DocumentService {
 		}
 		
 		file.setType(type);
-		
+				
 		firestore.collection("File").document(String.valueOf(file.getFileID())).set(file);
 		
-		if (folderID != 0)
-		{
-			var folder = firestore.collection("File").document(String.valueOf(folderID)).get().get().toObject(File.class);
-			folder.setSize(folder.getSize() + file.getSize());
-			firestore.collection("File").document(String.valueOf(folderID)).set(folder);
-		}
+		UpdateSize(file.getSize(), folderID, "+");
         
 		return blob.getMediaLink();
 	}
 	
+	public void UpdateSize(double size, int folderID, String calculation) throws IOException, InterruptedException, ExecutionException {
+		
+		if (folderID == 0)
+		{
+			return;
+		}
+		else
+		{
+			var folder = firestore.collection("File").document(String.valueOf(folderID)).get().get().toObject(File.class);
+			UpdateSize(size, folder.getLocation(), calculation);
+			if (calculation.equals("+")) folder.setSize(folder.getSize() + size);
+			else folder.setSize(folder.getSize() - size);
+			firestore.collection("File").document(String.valueOf(folder.getFileID())).set(folder);
+		}
+		
+	}
+
 	public String DeleteDocument(int docID, String userName) throws IOException, InterruptedException, ExecutionException {
 		File existingFile = firestore.collection("File").document(String.valueOf(docID)).get().get().toObject(File.class);
 		
 		if (existingFile.getCreatedUser().equals(userName))
 		{			
 			firestore.collection("File").document(String.valueOf(docID)).delete();
-			
-			if (existingFile.getLocation() != 0)
-			{
-				var folder = firestore.collection("File").document(String.valueOf(existingFile.getLocation())).get().get().toObject(File.class);
-				folder.setSize(folder.getSize() - existingFile.getSize());
-				firestore.collection("File").document(String.valueOf(existingFile.getLocation())).set(folder);
-			}
+			UpdateSize(existingFile.getSize(), existingFile.getLocation(), "-");
 			
 			return "Success";
 		}

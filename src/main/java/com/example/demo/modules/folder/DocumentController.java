@@ -5,6 +5,7 @@ import java.util.concurrent.ExecutionException;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -43,7 +44,7 @@ public class DocumentController {
 		return ResponseEntity.ok(documentService.CreateDocument(file, extractToken(request), folderID));
 	}
 	
-	@PostMapping("/deleteFile")
+	@DeleteMapping("/deleteFile")
 	public ResponseEntity<String> DeleteFile (@RequestParam("fileID") int fileID, 
 										    HttpServletRequest request) throws IOException, ExecutionException, InterruptedException 
 	{

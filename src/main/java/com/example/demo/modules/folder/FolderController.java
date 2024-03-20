@@ -1,5 +1,6 @@
 package com.example.demo.modules.folder;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
@@ -54,15 +55,16 @@ public class FolderController {
 	
 	@PutMapping("/moveToAnotherFolder") // Update Folder/File Location (Copy - Paste)
 	public ResponseEntity<String> MoveToAnotherFolder(@RequestParam("folderID") int folderID, @RequestParam("newFolderID") int newFolderID, HttpServletRequest request) 
-			throws ExecutionException, InterruptedException
+			throws ExecutionException, InterruptedException, IOException
 	{
 		return ResponseEntity.ok(folderService.MoveToAnotherFolder(folderID, newFolderID, extractToken(request)));
 	}
 	
 	@DeleteMapping("/deleteFolder") 
 	public ResponseEntity<String> DeleteFolder(@RequestParam("folderID") int folderID, HttpServletRequest request) 
-			throws ExecutionException, InterruptedException
+			throws IOException, ExecutionException, InterruptedException
 	{
+		
 		return ResponseEntity.ok(folderService.DeleteFolder(folderID, extractToken(request)));
 	}
 	
