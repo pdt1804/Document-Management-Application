@@ -1,4 +1,4 @@
-package com.example.demo.modules.folder;
+package com.example.demo.modules.file;
 
 import java.io.IOException;
 import java.util.Date;
@@ -27,7 +27,7 @@ public class DocumentService {
 	private Firestore firestore;
 	
 	public int GetNewFileID() throws ExecutionException, InterruptedException {
-		return ++com.example.demo.modules.folder.FolderService.id;
+		return ++com.example.demo.modules.file.FolderService.id;
 	}
 	
 	public String CreateDocument(MultipartFile doc, String userName, int folderID) throws IOException, InterruptedException, ExecutionException {
@@ -95,6 +95,9 @@ public class DocumentService {
 		if (existingFile.getCreatedUser().equals(userName))
 		{			
 			firestore.collection("File").document(String.valueOf(docID)).delete();
+			Bucket bucket = StorageClient.getInstance().bucket();
+			Blob blob = bucket.get(existingFile.getFileName());
+	        blob.delete();
 			UpdateSize(existingFile.getSize(), existingFile.getLocation(), "-");
 			
 			return "Success";
