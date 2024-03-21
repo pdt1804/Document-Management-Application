@@ -1,11 +1,13 @@
 package com.example.demo.modules.file;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -49,5 +51,26 @@ public class DocumentController {
 										    HttpServletRequest request) throws IOException, ExecutionException, InterruptedException 
 	{
 		return ResponseEntity.ok(documentService.DeleteDocument(fileID, extractToken(request)));
+	}
+	
+	@PostMapping("/addingToSavingFile")
+	public ResponseEntity<String> AddingToSavingFIle (@RequestParam("fileID") int fileID, 
+													   HttpServletRequest request) 
+													   throws IOException, ExecutionException, InterruptedException 
+	{
+		return ResponseEntity.ok(documentService.AddingSavingFile(fileID, extractToken(request)));
+	}
+	
+	@DeleteMapping("/removingSavingFile")
+	public void RemovingSavingFile (@RequestParam("fileID") int fileID, 
+										    HttpServletRequest request) throws IOException, ExecutionException, InterruptedException 
+	{
+		documentService.RemovingSavingFile(fileID, extractToken(request));
+	}
+	
+	@GetMapping("/getAllSavingFiles")
+	public ResponseEntity<List<File>> GetAllSavingFiles (HttpServletRequest request) throws IOException, ExecutionException, InterruptedException 
+	{
+		return ResponseEntity.ok(documentService.GetAllSavingFile(extractToken(request)));
 	}
 }

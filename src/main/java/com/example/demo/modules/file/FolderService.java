@@ -15,6 +15,9 @@ import com.google.api.core.ApiFuture;
 import com.google.cloud.firestore.DocumentSnapshot;
 import com.google.cloud.firestore.Firestore;
 import com.google.cloud.firestore.QuerySnapshot;
+import com.google.cloud.storage.Blob;
+import com.google.cloud.storage.Bucket;
+import com.google.firebase.cloud.StorageClient;
 
 import jakarta.annotation.PostConstruct;
 
@@ -79,6 +82,7 @@ public class FolderService {
 	public File CreateFolder(File folder, String userName) throws ExecutionException, InterruptedException {
 		int folderID = GetNewFolderID();
 		folder.setFileID(folderID);
+		folder.setNameOnCloud(null);
 		folder.setCreatedUser(userName);
 		folder.setSize(0);
 		folder.setCreatedTime(new Date());
@@ -131,7 +135,10 @@ public class FolderService {
 				}
 				else
 				{
-					firestore.collection("File").document(String.valueOf(folder.getFileID())).delete();						
+					firestore.collection("File").document(String.valueOf(folder.getFileID())).delete();		
+					Bucket bucket = StorageClient.getInstance().bucket(); 
+					Blob blob = bucket.get(folder.getNameOnCloud());
+					blob.delete();
 				}
 			}
 		}

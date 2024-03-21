@@ -9,6 +9,7 @@ public class File {
 
 	private int fileID;
 	private String fileName;
+	private String nameOnCloud;
 	private String createdUser;
 	private String url;
 	private Date createdTime;

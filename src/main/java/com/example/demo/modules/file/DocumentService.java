@@ -1,6 +1,7 @@
 package com.example.demo.modules.file;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Random;
@@ -32,16 +33,17 @@ public class DocumentService {
 	
 	public String CreateDocument(MultipartFile doc, String userName, int folderID) throws IOException, InterruptedException, ExecutionException {
 		Random rd = new Random();
-        String fileName = doc.getName() + "-" + userName + "-" + rd.nextInt(1, 9999999) + "-" + rd.nextInt(1, 9999999);
-        String url = "https://firebasestorage.googleapis.com/v0/b/" + firestore.getOptions().getProjectId() + ".appspot.com/o/" + fileName + "?alt=media";
+        String nameOnCloud = doc.getName() + "-" + userName + "-" + rd.nextInt(1, 9999999) + "-" + rd.nextInt(1, 9999999);
+        String url = "https://firebasestorage.googleapis.com/v0/b/" + firestore.getOptions().getProjectId() + ".appspot.com/o/" + nameOnCloud + "?alt=media";
 		Bucket bucket = StorageClient.getInstance().bucket();
-        var blob = bucket.create(fileName, doc.getBytes(), doc.getContentType());
+        var blob = bucket.create(nameOnCloud, doc.getBytes(), doc.getContentType());
         
         File file = new File();
         file.setCreatedTime(new Date());
         file.setCreatedUser(userName);
         file.setFileID(GetNewFileID());
-        file.setFileName(fileName);
+        file.setFileName(doc.getName());
+        file.setNameOnCloud(nameOnCloud);
         if (folderID != 0) file.setLocation(folderID);
         else file.setLocation(0);
         file.setSize(blob.getSize());
@@ -96,7 +98,7 @@ public class DocumentService {
 		{			
 			firestore.collection("File").document(String.valueOf(docID)).delete();
 			Bucket bucket = StorageClient.getInstance().bucket();
-			Blob blob = bucket.get(existingFile.getFileName());
+			Blob blob = bucket.get(existingFile.getNameOnCloud());
 	        blob.delete();
 			UpdateSize(existingFile.getSize(), existingFile.getLocation(), "-");
 			
@@ -104,6 +106,42 @@ public class DocumentService {
 		}
 		
 		return "This folder is not belonged to your account !";
+	}
+	
+	public String AddingSavingFile(int fileID, String userName) throws IOException, InterruptedException, ExecutionException {
+		SavingDocument savingDoc = new SavingDocument();
+		savingDoc.setFileID(fileID);
+		savingDoc.setUserName(userName);
+		savingDoc.setSavingTime(new Date());
+		var doc = firestore.collection("SavingDocuments").document(userName + "-" + String.valueOf(fileID)).get().get().toObject(SavingDocument.class);
+		if (doc == null)
+		{
+			firestore.collection("SavingDocuments").document(userName + "-" + String.valueOf(fileID)).set(savingDoc);
+			return "Saving successfully";
+		}
+		else
+		{
+			return "You have already saved this file.";
+		}
+	}
+	
+	public void RemovingSavingFile(int fileID, String userName) throws IOException, InterruptedException, ExecutionException {
+		var doc = firestore.collection("SavingDocuments").document(userName + "-" + String.valueOf(fileID)).get().get().toObject(SavingDocument.class);
+		firestore.collection("SavingDocuments").document(userName + "-" + String.valueOf(fileID)).delete();
+	}
+	
+	public List<File> GetAllSavingFile(String userName) throws IOException, InterruptedException, ExecutionException {
+		List<File> savingDocs = new ArrayList<>();
+		var listSavingFile = firestore.collection("SavingDocuments").get().get().getDocuments();
+		for(var p : listSavingFile)
+		{
+			SavingDocument doc = p.toObject(SavingDocument.class);
+			if (doc.getUserName().equals(userName))
+			{
+				savingDocs.add(firestore.collection("File").document(String.valueOf(doc.getFileID())).get().get().toObject(File.class));
+			}
+		}
+		return savingDocs;
 	}
 	
 }

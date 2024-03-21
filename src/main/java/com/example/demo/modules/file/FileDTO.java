@@ -17,6 +17,7 @@ public class FileDTO {
 
 	private int fileID;
 	private String fileName;
+	private String nameOnCloud;
 	private String createdUser;
 	private String url;
 	private Date createdTime;
@@ -28,9 +29,9 @@ public class FileDTO {
 		
 	public FileDTO(File file, Firestore firestore) throws InterruptedException, ExecutionException
 	{
-		files = new ArrayList<>();
 		this.fileID = file.getFileID();
 		this.fileName = file.getFileName();
+		this.nameOnCloud = file.getNameOnCloud();
 		this.createdUser = file.getCreatedUser();
 		this.url = file.getUrl();
 		this.createdTime = file.getCreatedTime();
@@ -41,6 +42,7 @@ public class FileDTO {
 				
 		if (type == FileType.Folder)
 		{
+			files = new ArrayList<>();
 			getAllFilesInFolder(firestore);
 		}
 	}
