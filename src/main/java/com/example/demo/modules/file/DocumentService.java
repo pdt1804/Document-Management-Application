@@ -5,12 +5,14 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Random;
+import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.example.demo.modules.user.User;
 import com.google.cloud.firestore.Firestore;
 import com.google.cloud.storage.Blob;
 import com.google.cloud.storage.BlobId;
@@ -130,18 +132,111 @@ public class DocumentService {
 		firestore.collection("SavingDocuments").document(userName + "-" + String.valueOf(fileID)).delete();
 	}
 	
-	public List<File> GetAllSavingFile(String userName) throws IOException, InterruptedException, ExecutionException {
-		List<File> savingDocs = new ArrayList<>();
+	public List<FileDTO> GetAllSavingFile(String userName) throws IOException, InterruptedException, ExecutionException {
+		List<FileDTO> savingDocs = new ArrayList<>();
 		var listSavingFile = firestore.collection("SavingDocuments").get().get().getDocuments();
-		for(var p : listSavingFile)
+		for(var p : listSavingFile) 
 		{
 			SavingDocument doc = p.toObject(SavingDocument.class);
 			if (doc.getUserName().equals(userName))
 			{
-				savingDocs.add(firestore.collection("File").document(String.valueOf(doc.getFileID())).get().get().toObject(File.class));
+				savingDocs.add(new FileDTO(firestore.collection("File").document(String.valueOf(doc.getFileID())).get().get().toObject(File.class), firestore));
 			}
 		}
 		return savingDocs;
+	}
+	
+	public String AddingSharingFile(int fileID, String[] sharedUserName, int permitType, String owner) throws IOException, InterruptedException, ExecutionException {
+		var file = firestore.collection("File").document(String.valueOf(fileID)).get().get().toObject(File.class);
+		if (file.getCreatedUser().equals(owner))
+		{
+			for (var p : sharedUserName)
+			{
+				SharingDocument doc = new SharingDocument();
+				doc.setFileID(fileID);
+				doc.setUserName(p);
+				doc.setSharingTime(new Date());
+				SharingType type;
+				if (permitType == 1) type = SharingType.View;
+				else type = SharingType.Editable;
+				doc.setSharingType(type);
+				firestore.collection("SharingDocument").document(p + "-" + fileID).set(doc);
+			}
+			return "Successful";
+		}
+		return "This folder is not belonged to your account !";
+	}
+	
+	public String RemovingSharingFile(int fileID, String[] sharedUserName, String owner) throws IOException, InterruptedException, ExecutionException {
+		var file = firestore.collection("File").document(String.valueOf(fileID)).get().get().toObject(File.class);
+		if (file.getCreatedUser().equals(owner))
+		{
+			for (var p : sharedUserName)
+			{
+				SharingDocument doc = firestore.collection("SharingDocument").document(p + "-" + fileID).get().get().toObject(SharingDocument.class);
+				doc.setRemovingTime(new Date());
+				firestore.collection("UnsharingDocument").document(p + "-" + fileID + "-" + UUID.randomUUID()).set(doc);
+				firestore.collection("SharingDocument").document(p + "-" + fileID).delete();
+			}
+			return "Successful";
+		}
+		return "This folder is not belonged to your account !";	
+	}
+	
+	public List<FileDTO> GetAllSharingFile(String userName) throws IOException, InterruptedException, ExecutionException {
+		List<FileDTO> files = new ArrayList<>();
+		for (var p : firestore.collection("SharingDocument").get().get().getDocuments())
+		{
+			SharingDocument doc = p.toObject(SharingDocument.class);
+			if (doc.getUserName().equals(userName))
+			{
+				files.add(new FileDTO(firestore.collection("File").document(String.valueOf(doc.getFileID())).get().get().toObject(File.class), firestore));
+			}
+		}
+		return files;
+	}
+	
+	public String ChangePermission(int fileID, String[] sharedUserName, String owner) throws IOException, InterruptedException, ExecutionException {
+		File file = firestore.collection("File").document(String.valueOf(fileID)).get().get().toObject(File.class);
+		if (file.getCreatedUser().equals(owner))
+		{
+			for (var p : sharedUserName)
+			{
+				SharingDocument doc = firestore.collection("SharingDocument").document(p + "-" + fileID).get().get().toObject(SharingDocument.class);			
+				if (doc.getSharingType() == SharingType.View) doc.setSharingType(SharingType.Editable);
+				else doc.setSharingType(SharingType.View);
+				firestore.collection("SharingDocument").document(p + "-" + fileID).set(doc);
+			}
+			return "Changed Successfully";
+		}
+		return "This folder is not belonged to your account !";	
+	}
+	
+	public List<SharableUser> getAllSharableUser(int fileID, String userName) throws InterruptedException, ExecutionException, IOException {
+		
+		List<String> existingUserName = new ArrayList<>();
+		existingUserName.add(userName);
+		List<SharableUser> users = new ArrayList<>();
+		
+		for (var p : firestore.collection("SharingDocument").get().get().getDocuments())
+		{
+			var doc = p.toObject(SharingDocument.class);
+			if (doc.getFileID() == fileID)
+			{
+				existingUserName.add(doc.getUserName());
+			}
+		}
+		
+		for (var p : firestore.collection("User").get().get().getDocuments())
+		{
+			var user = p.toObject(User.class);
+			if (!existingUserName.stream().anyMatch(usr -> usr.equals(user.getUserName())))
+			{
+				users.add(new SharableUser(user, firestore));
+			}
+		}
+		
+		return users; 
 	}
 	
 }

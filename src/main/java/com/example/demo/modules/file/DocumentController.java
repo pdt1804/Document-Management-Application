@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -69,8 +70,51 @@ public class DocumentController {
 	}
 	
 	@GetMapping("/getAllSavingFiles")
-	public ResponseEntity<List<File>> GetAllSavingFiles (HttpServletRequest request) throws IOException, ExecutionException, InterruptedException 
+	public ResponseEntity<List<FileDTO>> GetAllSavingFiles (HttpServletRequest request) throws IOException, ExecutionException, InterruptedException 
 	{
 		return ResponseEntity.ok(documentService.GetAllSavingFile(extractToken(request)));
+	}
+	
+	@PostMapping("/addingToSharingFile")
+	public ResponseEntity<String> AddingToSharingFile (@RequestParam("fileID") int fileID, 
+													   @RequestParam("sharedUserName") String[] sharedUserName,
+													   @RequestParam("permitType") int permitType,
+													   HttpServletRequest request) 
+													   throws IOException, ExecutionException, InterruptedException 
+	{
+		return ResponseEntity.ok(documentService.AddingSharingFile(fileID, sharedUserName, permitType, extractToken(request)));
+	}
+	
+	@DeleteMapping("/removingSharingFile")
+	public ResponseEntity<String> RemovingSharingFile (@RequestParam("fileID") int fileID, 
+													   @RequestParam("sharedUserName") String[] sharedUserName,
+													   HttpServletRequest request) 
+													   throws IOException, ExecutionException, InterruptedException 
+	{
+		return ResponseEntity.ok(documentService.RemovingSharingFile(fileID, sharedUserName, extractToken(request)));
+	}
+	
+	@PutMapping("/changePermission")
+	public ResponseEntity<String> ChangePermission (@RequestParam("fileID") int fileID, 
+													@RequestParam("sharedUserName") String[] sharedUserName,
+													HttpServletRequest request) 
+													throws IOException, ExecutionException, InterruptedException 
+	{
+		return ResponseEntity.ok(documentService.ChangePermission(fileID, sharedUserName, extractToken(request)));
+	}
+	
+	@GetMapping("/getAllSharingFiles")
+	public ResponseEntity<List<FileDTO>> GetAllSharingFiles (HttpServletRequest request) 
+													  throws IOException, ExecutionException, InterruptedException 
+	{
+		return ResponseEntity.ok(documentService.GetAllSharingFile(extractToken(request)));
+	}
+	
+	@GetMapping("/getAllSharableUsers")
+	public ResponseEntity<List<SharableUser>> GetAllSharableUsers (@RequestParam("fileID") int fileID,
+																   HttpServletRequest request)
+														     	   throws IOException, ExecutionException, InterruptedException 
+	{
+		return ResponseEntity.ok(documentService.getAllSharableUser(fileID, extractToken(request)));
 	}
 }
