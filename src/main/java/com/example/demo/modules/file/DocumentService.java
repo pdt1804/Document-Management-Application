@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.example.demo.modules.logging.ActivityLoggingService;
 import com.example.demo.modules.user.User;
 import com.google.cloud.firestore.Firestore;
 import com.google.cloud.storage.Blob;
@@ -28,6 +29,9 @@ public class DocumentService {
 
 	@Autowired
 	private Firestore firestore;
+	
+	@Autowired
+	private ActivityLoggingService activityLoggingService;
 	
 	public int GetNewFileID() throws ExecutionException, InterruptedException {
 		return ++com.example.demo.modules.file.FolderService.id;
@@ -72,7 +76,7 @@ public class DocumentService {
 		firestore.collection("File").document(String.valueOf(file.getFileID())).set(file);
 		
 		UpdateSize(file.getSize(), folderID, "+");
-        
+        activityLoggingService.AddLoggingForPostingDocument(userName, file.getFileName());
 		return url;
 	}
 	
@@ -103,22 +107,25 @@ public class DocumentService {
 			Blob blob = bucket.get(existingFile.getNameOnCloud());
 	        blob.delete();
 			UpdateSize(existingFile.getSize(), existingFile.getLocation(), "-");
-			
+			activityLoggingService.AddLoggingForDeletingDocument(userName, existingFile.getFileName()); 
 			return "Success";
 		}
-		
 		return "This folder is not belonged to your account !";
 	}
 	
 	public String AddingSavingFile(int fileID, String userName) throws IOException, InterruptedException, ExecutionException {
-		SavingDocument savingDoc = new SavingDocument();
-		savingDoc.setFileID(fileID);
-		savingDoc.setUserName(userName);
-		savingDoc.setSavingTime(new Date());
 		var doc = firestore.collection("SavingDocuments").document(userName + "-" + String.valueOf(fileID)).get().get().toObject(SavingDocument.class);
 		if (doc == null)
 		{
+			SavingDocument savingDoc = new SavingDocument();
+			savingDoc.setFileID(fileID);
+			savingDoc.setUserName(userName);
+			savingDoc.setSavingTime(new Date());
 			firestore.collection("SavingDocuments").document(userName + "-" + String.valueOf(fileID)).set(savingDoc);
+			
+			var file = firestore.collection("File").document(String.valueOf(fileID)).get().get().toObject(File.class);
+			activityLoggingService.AddLoggingForAddingSavingFile(userName, file.getFileName());
+			
 			return "Saving successfully";
 		}
 		else
@@ -130,6 +137,9 @@ public class DocumentService {
 	public void RemovingSavingFile(int fileID, String userName) throws IOException, InterruptedException, ExecutionException {
 		var doc = firestore.collection("SavingDocuments").document(userName + "-" + String.valueOf(fileID)).get().get().toObject(SavingDocument.class);
 		firestore.collection("SavingDocuments").document(userName + "-" + String.valueOf(fileID)).delete();
+		
+		var file = firestore.collection("File").document(String.valueOf(fileID)).get().get().toObject(File.class);
+		activityLoggingService.AddLoggingForRemovingSavingFile(userName, file.getFileName());
 	}
 	
 	public List<FileDTO> GetAllSavingFile(String userName) throws IOException, InterruptedException, ExecutionException {
@@ -161,6 +171,7 @@ public class DocumentService {
 				else type = SharingType.Editable;
 				doc.setSharingType(type);
 				firestore.collection("SharingDocument").document(p + "-" + fileID).set(doc);
+				activityLoggingService.AddLoggingForAddingSharingFile(owner, file.getFileName(), p);
 			}
 			return "Successful";
 		}
@@ -177,6 +188,7 @@ public class DocumentService {
 				doc.setRemovingTime(new Date());
 				firestore.collection("UnsharingDocument").document(p + "-" + fileID + "-" + UUID.randomUUID()).set(doc);
 				firestore.collection("SharingDocument").document(p + "-" + fileID).delete();
+				activityLoggingService.AddLoggingForRemovingSharingFile(owner, file.getFileName(), p);
 			}
 			return "Successful";
 		}
@@ -206,6 +218,7 @@ public class DocumentService {
 				if (doc.getSharingType() == SharingType.View) doc.setSharingType(SharingType.Editable);
 				else doc.setSharingType(SharingType.View);
 				firestore.collection("SharingDocument").document(p + "-" + fileID).set(doc);
+				activityLoggingService.AddLoggingForChangingPermission(owner, file.getFileName(), p, doc.getSharingType());
 			}
 			return "Changed Successfully";
 		}

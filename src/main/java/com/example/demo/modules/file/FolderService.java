@@ -10,6 +10,7 @@ import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.example.demo.modules.logging.ActivityLoggingService;
 import com.example.demo.modules.user.UserService;
 import com.google.api.core.ApiFuture;
 import com.google.cloud.firestore.DocumentSnapshot;
@@ -34,6 +35,9 @@ public class FolderService {
 	
 	@Autowired
 	private DocumentService documentService;
+	
+	@Autowired
+	private ActivityLoggingService activityLoggingService;
 	
 	@PostConstruct
 	public void getLastFolderID() throws ExecutionException, InterruptedException
@@ -72,7 +76,8 @@ public class FolderService {
 			firestore.collection("File").document(String.valueOf(existingFolder.getFileID())).set(existingFolder);
 			
 			documentService.UpdateSize(existingFolder.getSize(), existingFolder.getLocation(), "+");
-			
+			activityLoggingService.AddLoggingForMovingToAnotherFolder(userName, existingFolder.getFileName());
+
 			return "Success";
 		}
 		
@@ -89,6 +94,7 @@ public class FolderService {
 		folder.setUpdatedTime(new Date());
 		folder.setType(FileType.Folder);
 		firestore.collection("File").document(String.valueOf(folderID)).set(folder);
+		activityLoggingService.AddLoggingForCreatingFolderName(userName, folder.getFileName());
 		return folder;
 	}
 	
@@ -97,9 +103,11 @@ public class FolderService {
 		
 		if (userName.equals(existingFolder.getCreatedUser()))
 		{
+			String previousFileName = existingFolder.getFileName();
 			existingFolder.setFileName(folder.getFileName());
 			existingFolder.setUpdatedTime(new Date());
 			firestore.collection("File").document(String.valueOf(existingFolder.getFileID())).set(existingFolder);
+			activityLoggingService.AddLoggingForUpdatingFolderName(userName, folder.getFileName(), previousFileName);
 			return "Success";
 		}
 		
@@ -115,6 +123,7 @@ public class FolderService {
 			
 			firestore.collection("File").document(String.valueOf(folderID)).delete();
 			documentService.UpdateSize(existingFolder.getSize(), existingFolder.getLocation(), "-");
+			activityLoggingService.AddLoggingForDeletingFolder(userName, existingFolder.getFileName());
 			return "Success";
 		}
 		

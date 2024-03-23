@@ -9,6 +9,9 @@ import org.springframework.stereotype.Service;
 
 import com.example.demo.modules.information.Information;
 import com.example.demo.modules.jwt.JwtService;
+import com.example.demo.modules.logging.ActivityLogging;
+import com.example.demo.modules.logging.ActivityLoggingService;
+import com.example.demo.modules.logging.ActivityType;
 import com.google.api.core.ApiFuture;
 import com.google.cloud.firestore.DocumentReference;
 import com.google.cloud.firestore.DocumentSnapshot;
@@ -31,6 +34,9 @@ public class UserService {
 	@Autowired
 	private PasswordEncoder passwordEncoder;
 	
+	@Autowired
+	private ActivityLoggingService activityLoggingService;
+	
 	public User Authenticate(String userName, String passWord)
 	{
 		try 
@@ -39,6 +45,7 @@ public class UserService {
 			
 			if (authenticate.isAuthenticated())
 			{
+				//activityLoggingService.AddLoggingForLogin(userName);
 				return GetUser(userName);
 			}
 			

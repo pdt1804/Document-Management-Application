@@ -1,5 +1,9 @@
 package com.example.demo.modules.information;
 
+import java.io.IOException;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -11,6 +15,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.example.demo.modules.email.EmailService;
 import com.example.demo.modules.jwt.JwtService;
+import com.example.demo.modules.logging.ActivityLogging;
+import com.example.demo.modules.logging.ActivityLoggingService;
 import com.example.demo.modules.user.ChangePassword;
 import com.example.demo.modules.user.UserService;
 
@@ -32,6 +38,9 @@ public class InformationController {
 	@Autowired 
 	private JwtService jwtService;
 	
+	@Autowired
+	private ActivityLoggingService activityLoggingService;
+	
 	public String extractToken(HttpServletRequest httpRequest)
 	{
 		String authHeader = httpRequest.getHeader("Authorization");
@@ -51,6 +60,12 @@ public class InformationController {
 		return ResponseEntity.ok(informationService.GetInformation(informationID)); 
 	}
 	
+	@GetMapping("/getActivitiesLoggingOfUser")
+	public ResponseEntity<List<ActivityLogging>> GetInformation(HttpServletRequest httpRequest) throws IOException, ExecutionException, InterruptedException
+	{
+		return ResponseEntity.ok(activityLoggingService.getAllActivityLoggingOfUser(extractToken(httpRequest))); 
+	}
+	
 	@PostMapping("/changeInformation") // Information + Image
 	public ResponseEntity<String> ChangeInformation(@RequestBody Information information, HttpServletRequest httpRequest)
 	{
@@ -60,7 +75,7 @@ public class InformationController {
 			return ResponseEntity.ok("InformationID of information isn't belonged to your username.");
 		}
 		
-		return ResponseEntity.ok(informationService.ChangeInformation(information)); 
+		return ResponseEntity.ok(informationService.ChangeInformation(information, extractToken(httpRequest))); 
 	}
 	
 	@PostMapping("/changePassWord")

@@ -3,6 +3,9 @@ package com.example.demo.modules.information;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.example.demo.modules.logging.ActivityLogging;
+import com.example.demo.modules.logging.ActivityLoggingService;
+import com.example.demo.modules.logging.ActivityType;
 import com.example.demo.modules.user.User;
 import com.google.api.core.ApiFuture;
 import com.google.cloud.firestore.DocumentReference;
@@ -14,6 +17,9 @@ public class InformationService {
 
 	@Autowired
 	private Firestore firestore;
+	
+	@Autowired
+	private ActivityLoggingService activityLoggingService;
 	
 	public Information GetInformation(long informationID)
 	{
@@ -38,10 +44,11 @@ public class InformationService {
 		}
 	}
 	
-	public String ChangeInformation(Information information)
+	public String ChangeInformation(Information information, String userName)
 	{
 		try {
 			firestore.collection("Information").document(String.valueOf(information.getInformationID())).set(information);
+			activityLoggingService.AddLoggingForChangingInformation(userName);
 			return "Success";
 		} catch (Exception e) {
 			e.printStackTrace();
