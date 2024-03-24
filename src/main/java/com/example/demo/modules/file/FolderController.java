@@ -68,11 +68,34 @@ public class FolderController {
 		return ResponseEntity.ok(folderService.DeleteFolder(folderID, extractToken(request)));
 	}
 	
+	@DeleteMapping("/deleteFolderPermanently") 
+	public ResponseEntity<String> DeleteFolderPermanently(@RequestParam("folderID") int folderID, HttpServletRequest request) 
+			throws IOException, ExecutionException, InterruptedException
+	{
+		
+		return ResponseEntity.ok(folderService.DeleteFolderPermanently(folderID, extractToken(request)));
+	}
+	
+	@PostMapping("/restoreFile") 
+	public ResponseEntity<String> RestoreFile(@RequestParam("folderID") int folderID, HttpServletRequest request) 
+			throws IOException, ExecutionException, InterruptedException
+	{
+		
+		return ResponseEntity.ok(folderService.RestoreFile(folderID, extractToken(request)));
+	}
+	
 	@GetMapping("/getAllFolderOfUser") 
 	public ResponseEntity<List<FileDTO>> GetAllFolderOfUser(HttpServletRequest request) 
 			throws ExecutionException, InterruptedException
 	{
 		return ResponseEntity.ok(folderService.GetAllFolderOfUser(extractToken(request)));
+	}
+	
+	@GetMapping("/getAllDeletedFiles") 
+	public ResponseEntity<List<FileDTO>> GetAllDeletedFiles(HttpServletRequest request) 
+			throws ExecutionException, InterruptedException, IOException
+	{
+		return ResponseEntity.ok(folderService.getAllDeletedFile(extractToken(request)));
 	}
 	
 }

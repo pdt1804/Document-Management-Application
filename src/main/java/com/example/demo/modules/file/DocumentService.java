@@ -103,11 +103,24 @@ public class DocumentService {
 		if (existingFile.getCreatedUser().equals(userName))
 		{			
 			firestore.collection("File").document(String.valueOf(docID)).delete();
+			firestore.collection("DeletedFile").document(String.valueOf(docID)).set(existingFile);
+			UpdateSize(existingFile.getSize(), existingFile.getLocation(), "-");
+			activityLoggingService.AddLoggingForDeletingDocument(userName, existingFile.getFileName()); 
+			return "Success";
+		}
+		return "This folder is not belonged to your account !";
+	}
+	
+	public String DeleteDocumentPermanently(int docID, String userName) throws IOException, InterruptedException, ExecutionException {
+		File existingFile = firestore.collection("DeletedFile").document(String.valueOf(docID)).get().get().toObject(File.class);
+		
+		if (existingFile.getCreatedUser().equals(userName))
+		{			
+			firestore.collection("DeletedFile").document(String.valueOf(docID)).delete();
 			Bucket bucket = StorageClient.getInstance().bucket();
 			Blob blob = bucket.get(existingFile.getNameOnCloud());
 	        blob.delete();
-			UpdateSize(existingFile.getSize(), existingFile.getLocation(), "-");
-			activityLoggingService.AddLoggingForDeletingDocument(userName, existingFile.getFileName()); 
+			activityLoggingService.AddLoggingForDeletingDocumentPermanently(userName, existingFile.getFileName()); 
 			return "Success";
 		}
 		return "This folder is not belonged to your account !";

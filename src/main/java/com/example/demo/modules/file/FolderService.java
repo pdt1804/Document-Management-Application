@@ -118,12 +118,26 @@ public class FolderService {
 		File existingFolder = firestore.collection("File").document(String.valueOf(folderID)).get().get().toObject(File.class);
 		
 		if (existingFolder.getCreatedUser().equals(userName))
+		{						
+			firestore.collection("File").document(String.valueOf(folderID)).delete();
+			firestore.collection("DeletedFile").document(String.valueOf(folderID)).set(existingFolder);
+			documentService.UpdateSize(existingFolder.getSize(), existingFolder.getLocation(), "-");
+			activityLoggingService.AddLoggingForDeletingFolder(userName, existingFolder.getFileName());
+			return "Success";
+		}
+		
+		return "This folder is not belonged to your account !";
+	}
+	
+	public String DeleteFolderPermanently(int folderID, String userName) throws IOException, ExecutionException, InterruptedException {
+		File existingFolder = firestore.collection("DeletedFile").document(String.valueOf(folderID)).get().get().toObject(File.class);
+		
+		if (existingFolder.getCreatedUser().equals(userName))
 		{			
 			DeleteAllFileInFolder(folderID);
 			
-			firestore.collection("File").document(String.valueOf(folderID)).delete();
-			documentService.UpdateSize(existingFolder.getSize(), existingFolder.getLocation(), "-");
-			activityLoggingService.AddLoggingForDeletingFolder(userName, existingFolder.getFileName());
+			firestore.collection("DeletedFile").document(String.valueOf(folderID)).delete();
+			activityLoggingService.AddLoggingForDeletingFolderPermanently(userName, existingFolder.getFileName());
 			return "Success";
 		}
 		
@@ -166,5 +180,33 @@ public class FolderService {
 	    }
 		
 		return files.stream().sorted((t1,t2) -> t2.getCreatedTime().compareTo(t1.getCreatedTime())).collect(Collectors.toList());
+	}
+	
+	public String RestoreFile(int fileID, String userName) throws ExecutionException, InterruptedException {
+		var file = firestore.collection("DeletedFile").document(String.valueOf(fileID)).get().get().toObject(File.class);
+		
+		if (file.getCreatedUser().equals(userName))
+		{
+			firestore.collection("File").document(String.valueOf(file.getFileID())).set(file);
+			firestore.collection("DeletedFile").document(String.valueOf(file.getFileID())).delete();
+			return "Success";
+		}
+		
+		return "This folder is not belonged to your account !";
+	}
+	
+	public List<FileDTO> getAllDeletedFile(String userName) throws IOException, ExecutionException, InterruptedException {
+		List<FileDTO> files = new ArrayList<>();
+		
+		for (var p : firestore.collection("DeletedFile").get().get().getDocuments())
+		{
+			var file = p.toObject(File.class);
+			if (file.getCreatedUser().equals(userName))
+			{
+				files.add(new FileDTO(file, firestore));
+			}
+		}
+		
+		return files.stream().sorted((p1,p2) -> p2.getCreatedTime().compareTo(p1.getCreatedTime())).toList();
 	}
 }

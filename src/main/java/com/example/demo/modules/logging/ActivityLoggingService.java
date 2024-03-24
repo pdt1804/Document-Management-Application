@@ -49,6 +49,12 @@ public class ActivityLoggingService {
 		firestore.collection("StorageLogging").document(log.getUserName() + "-" + UUID.randomUUID()).set(log);
 	}
 	
+	public void AddLoggingForDeletingFolderPermanently(String userName, String fileName) {
+		var log = new ActivityLogging(userName, ActivityType.DeleteFolderPermanently);
+		log.setContentForDeletingFolderPermanently(fileName);
+		firestore.collection("StorageLogging").document(log.getUserName() + "-" + UUID.randomUUID()).set(log);
+	}
+	
 	public void AddLoggingForUpdatingFolderName(String userName, String fileName, String previousFileName) {
 		var log = new ActivityLogging(userName, ActivityType.EditFolderName);
 		log.setContentForEditingFolderName(fileName, previousFileName);
@@ -76,6 +82,12 @@ public class ActivityLoggingService {
 	public void AddLoggingForDeletingDocument(String userName, String fileName) {
 		var log = new ActivityLogging(userName, ActivityType.DeleteDocument);
 		log.setContentForDeletingDocument(fileName);
+		firestore.collection("StorageLogging").document(log.getUserName() + "-" + UUID.randomUUID()).set(log);
+	}
+	
+	public void AddLoggingForDeletingDocumentPermanently(String userName, String fileName) {
+		var log = new ActivityLogging(userName, ActivityType.DeleteDocumentPermanently);
+		log.setContentForDeletingDocumentPermanently(fileName);
 		firestore.collection("StorageLogging").document(log.getUserName() + "-" + UUID.randomUUID()).set(log);
 	}
 	

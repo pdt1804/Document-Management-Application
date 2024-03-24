@@ -78,6 +78,11 @@ public class ActivityLogging {
         content = "You deleted a folder " + fileName + ".";
 	}
 	
+	public void setContentForDeletingFolderPermanently(String fileName)
+	{
+        content = "You deleted a folder " + fileName + " permanently.";
+	}
+	
 	public void setContentForCreatingFolder(String fileName)
 	{
         content = "You created a folder " + fileName + ".";
@@ -86,6 +91,11 @@ public class ActivityLogging {
 	public void setContentForDeletingDocument(String fileName)
 	{
         content = "You deleted a document " + fileName + ".";
+	}
+	
+	public void setContentForDeletingDocumentPermanently(String fileName)
+	{
+        content = "You deleted a document " + fileName + " permanently.";
 	}
 	
 	public void setContentForPostingDocument(String fileName)

@@ -54,6 +54,13 @@ public class DocumentController {
 		return ResponseEntity.ok(documentService.DeleteDocument(fileID, extractToken(request)));
 	}
 	
+	@DeleteMapping("/deleteFilePermanently")
+	public ResponseEntity<String> DeleteFilePermanently (@RequestParam("fileID") int fileID, 
+										    HttpServletRequest request) throws IOException, ExecutionException, InterruptedException 
+	{
+		return ResponseEntity.ok(documentService.DeleteDocumentPermanently(fileID, extractToken(request)));
+	}
+	
 	@PostMapping("/addingToSavingFile")
 	public ResponseEntity<String> AddingToSavingFIle (@RequestParam("fileID") int fileID, 
 													   HttpServletRequest request) 
