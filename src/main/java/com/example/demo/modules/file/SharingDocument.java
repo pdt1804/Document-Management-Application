@@ -12,6 +12,6 @@ public class SharingDocument {
 	private Date sharingTime;
 	private Date removingTime;
 	private SharingType sharingType;
-	private SharingStatus sharingStatus;
+	private Status status;
 
 }

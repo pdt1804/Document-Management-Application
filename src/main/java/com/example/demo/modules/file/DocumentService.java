@@ -104,6 +104,8 @@ public class DocumentService {
 		{			
 			firestore.collection("File").document(String.valueOf(docID)).delete();
 			firestore.collection("DeletedFile").document(String.valueOf(docID)).set(existingFile);
+			ChangeStatusOfAllSharingAndSavingFiles(docID, Status.Inactive);
+			ChangeStatus(docID, Status.Inactive);
 			UpdateSize(existingFile.getSize(), existingFile.getLocation(), "-");
 			activityLoggingService.AddLoggingForDeletingDocument(userName, existingFile.getFileName()); 
 			return "Success";
@@ -111,6 +113,43 @@ public class DocumentService {
 		return "This folder is not belonged to your account !";
 	}
 	
+	private void ChangeStatusOfAllSharingAndSavingFiles(int docID, Status status) throws InterruptedException, ExecutionException, IOException {		
+		for (var p : firestore.collection("File").get().get().getDocuments())
+		{
+			var file = p.toObject(File.class);
+			if (file.getLocation() == docID)
+			{
+				if (file.getType() == FileType.Folder)
+				{
+					ChangeStatusOfAllSharingAndSavingFiles(file.getFileID(), status);
+				}
+				ChangeStatus(file.getFileID(), status);
+			}
+		}
+	}
+	
+	private void ChangeStatus(int docID, Status status) throws ExecutionException, IOException, InterruptedException {
+		for (var p : firestore.collection("SavingDocuments").get().get().getDocuments())
+		{
+			var file = p.toObject(SavingDocument.class);
+			if (file.getFileID() == docID)
+			{
+				file.setStatus(status);
+				firestore.collection("SavingDocuments").document(file.getUserName() + "-" + String.valueOf(file.getFileID())).set(file);
+			}
+		}
+		
+		for (var p : firestore.collection("SharingDocument").get().get().getDocuments())
+		{
+			var file = p.toObject(SharingDocument.class);
+			if (file.getFileID() == docID)
+			{
+				file.setStatus(status);
+				firestore.collection("SharingDocument").document(file.getUserName() + "-" + String.valueOf(file.getFileID())).set(file);
+			}
+		}
+	}
+
 	public String DeleteDocumentPermanently(int docID, String userName) throws IOException, InterruptedException, ExecutionException {
 		File existingFile = firestore.collection("DeletedFile").document(String.valueOf(docID)).get().get().toObject(File.class);
 		
@@ -121,11 +160,32 @@ public class DocumentService {
 			Blob blob = bucket.get(existingFile.getNameOnCloud());
 	        blob.delete();
 			activityLoggingService.AddLoggingForDeletingDocumentPermanently(userName, existingFile.getFileName()); 
+			DeleteAllSharingAndSavingFiles(docID);
 			return "Success";
 		}
 		return "This folder is not belonged to your account !";
 	}
 	
+	private void DeleteAllSharingAndSavingFiles(int docID) throws IOException, InterruptedException, ExecutionException {	
+		for (var p : firestore.collection("SavingDocuments").get().get().getDocuments())
+		{
+			var file = p.toObject(SavingDocument.class);
+			if (file.getFileID() == docID)
+			{
+				firestore.collection("SavingDocuments").document(file.getUserName() + "-" + String.valueOf(file.getFileID())).delete();
+			}
+		}
+		
+		for (var p : firestore.collection("SharingDocument").get().get().getDocuments())
+		{
+			var file = p.toObject(SharingDocument.class);
+			if (file.getFileID() == docID)
+			{
+				firestore.collection("SharingDocument").document(file.getUserName() + "-" + String.valueOf(file.getFileID())).delete();
+			}
+		}
+	}
+
 	public String AddingSavingFile(int fileID, String userName) throws IOException, InterruptedException, ExecutionException {
 		var doc = firestore.collection("SavingDocuments").document(userName + "-" + String.valueOf(fileID)).get().get().toObject(SavingDocument.class);
 		if (doc == null)
@@ -134,6 +194,7 @@ public class DocumentService {
 			savingDoc.setFileID(fileID);
 			savingDoc.setUserName(userName);
 			savingDoc.setSavingTime(new Date());
+			savingDoc.setStatus(Status.Active);
 			firestore.collection("SavingDocuments").document(userName + "-" + String.valueOf(fileID)).set(savingDoc);
 			
 			var file = firestore.collection("File").document(String.valueOf(fileID)).get().get().toObject(File.class);
@@ -161,7 +222,7 @@ public class DocumentService {
 		for(var p : listSavingFile) 
 		{
 			SavingDocument doc = p.toObject(SavingDocument.class);
-			if (doc.getUserName().equals(userName))
+			if (doc.getUserName().equals(userName) && doc.getStatus() == Status.Active)
 			{
 				savingDocs.add(new FileDTO(firestore.collection("File").document(String.valueOf(doc.getFileID())).get().get().toObject(File.class), firestore));
 			}
@@ -179,6 +240,7 @@ public class DocumentService {
 				doc.setFileID(fileID);
 				doc.setUserName(p);
 				doc.setSharingTime(new Date());
+				doc.setStatus(Status.Active);
 				SharingType type;
 				if (permitType == 1) type = SharingType.View;
 				else type = SharingType.Editable;
@@ -199,6 +261,7 @@ public class DocumentService {
 			{
 				SharingDocument doc = firestore.collection("SharingDocument").document(p + "-" + fileID).get().get().toObject(SharingDocument.class);
 				doc.setRemovingTime(new Date());
+				doc.setStatus(Status.Inactive);
 				firestore.collection("UnsharingDocument").document(p + "-" + fileID + "-" + UUID.randomUUID()).set(doc);
 				firestore.collection("SharingDocument").document(p + "-" + fileID).delete();
 				activityLoggingService.AddLoggingForRemovingSharingFile(owner, file.getFileName(), p);
@@ -213,7 +276,7 @@ public class DocumentService {
 		for (var p : firestore.collection("SharingDocument").get().get().getDocuments())
 		{
 			SharingDocument doc = p.toObject(SharingDocument.class);
-			if (doc.getUserName().equals(userName))
+			if (doc.getUserName().equals(userName) && doc.getStatus() == Status.Active)
 			{
 				files.add(new FileDTO(firestore.collection("File").document(String.valueOf(doc.getFileID())).get().get().toObject(File.class), firestore));
 			}

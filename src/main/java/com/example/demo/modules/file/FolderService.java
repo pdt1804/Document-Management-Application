@@ -122,11 +122,50 @@ public class FolderService {
 			firestore.collection("File").document(String.valueOf(folderID)).delete();
 			firestore.collection("DeletedFile").document(String.valueOf(folderID)).set(existingFolder);
 			documentService.UpdateSize(existingFolder.getSize(), existingFolder.getLocation(), "-");
+			ChangeStatusOfAllSharingAndSavingFiles(folderID, Status.Inactive);
+			ChangeStatus(folderID, Status.Inactive);
 			activityLoggingService.AddLoggingForDeletingFolder(userName, existingFolder.getFileName());
 			return "Success";
 		}
 		
 		return "This folder is not belonged to your account !";
+	}
+	
+	private void ChangeStatusOfAllSharingAndSavingFiles(int docID, Status status) throws InterruptedException, ExecutionException, IOException {		
+		for (var p : firestore.collection("File").get().get().getDocuments())
+		{
+			var file = p.toObject(File.class);
+			if (file.getLocation() == docID)
+			{
+				if (file.getType() == FileType.Folder)
+				{
+					ChangeStatusOfAllSharingAndSavingFiles(file.getFileID(), status);
+				}
+				ChangeStatus(file.getFileID(), status);
+			}
+		}
+	}
+	
+	private void ChangeStatus(int docID, Status status) throws ExecutionException, IOException, InterruptedException {
+		for (var p : firestore.collection("SavingDocuments").get().get().getDocuments())
+		{
+			var file = p.toObject(SavingDocument.class);
+			if (file.getFileID() == docID)
+			{
+				file.setStatus(status);
+				firestore.collection("SavingDocuments").document(file.getUserName() + "-" + String.valueOf(file.getFileID())).set(file);
+			}
+		}
+		
+		for (var p : firestore.collection("SharingDocument").get().get().getDocuments())
+		{
+			var file = p.toObject(SharingDocument.class);
+			if (file.getFileID() == docID)
+			{
+				file.setStatus(status);
+				firestore.collection("SharingDocument").document(file.getUserName() + "-" + String.valueOf(file.getFileID())).set(file);
+			}
+		}
 	}
 	
 	public String DeleteFolderPermanently(int folderID, String userName) throws IOException, ExecutionException, InterruptedException {
@@ -135,6 +174,8 @@ public class FolderService {
 		if (existingFolder.getCreatedUser().equals(userName))
 		{			
 			DeleteAllFileInFolder(folderID);
+			DeleteAllDeletedFileInFolder(folderID);
+			DeleteAllSharingAndSavingFiles(folderID);
 			
 			firestore.collection("DeletedFile").document(String.valueOf(folderID)).delete();
 			activityLoggingService.AddLoggingForDeletingFolderPermanently(userName, existingFolder.getFileName());
@@ -144,6 +185,26 @@ public class FolderService {
 		return "This folder is not belonged to your account !";
 	}
 	
+	private void DeleteAllSharingAndSavingFiles(int docID) throws IOException, InterruptedException, ExecutionException {	
+		for (var p : firestore.collection("SavingDocuments").get().get().getDocuments())
+		{
+			var file = p.toObject(SavingDocument.class);
+			if (file.getFileID() == docID)
+			{
+				firestore.collection("SavingDocuments").document(file.getUserName() + "-" + String.valueOf(file.getFileID())).delete();
+			}
+		}
+		
+		for (var p : firestore.collection("SharingDocument").get().get().getDocuments())
+		{
+			var file = p.toObject(SharingDocument.class);
+			if (file.getFileID() == docID)
+			{
+				firestore.collection("SharingDocument").document(file.getUserName() + "-" + String.valueOf(file.getFileID())).delete();
+			}
+		}
+	}
+	
 	private void DeleteAllFileInFolder(int folderID) throws IOException, ExecutionException, InterruptedException {
 		for (var document : firestore.collection("File").get().get().getDocuments())
 		{
@@ -151,10 +212,11 @@ public class FolderService {
 			
 			if (folder.getLocation() == folderID)
 			{
+				DeleteAllSharingAndSavingFiles(folder.getFileID());
 				if (folder.getType() == FileType.Folder)
 				{
 					DeleteAllFileInFolder(folder.getFileID());
-					firestore.collection("File").document(String.valueOf(folder.getFileID())).delete();						
+					firestore.collection("File").document(String.valueOf(folder.getFileID())).delete();		
 				}
 				else
 				{
@@ -164,9 +226,54 @@ public class FolderService {
 					blob.delete();
 				}
 			}
+			
 		}
 	}
 	
+	private void DeleteAllDeletedFileInFolder(int folderID) throws IOException, ExecutionException, InterruptedException {
+		for (var document : firestore.collection("DeletedFile").get().get().getDocuments())
+		{
+			File folder = document.toObject(File.class);
+			
+			if (folder.getLocation() == folderID)
+			{
+				DeleteAllSharingAndSavingFiles(folder.getFileID());
+				if (folder.getType() == FileType.Folder)
+				{
+					DeleteAllDeletedFileInFolder(folder.getFileID());
+					firestore.collection("DeletedFile").document(String.valueOf(folder.getFileID())).delete();		
+				}
+				else
+				{
+					firestore.collection("DeletedFile").document(String.valueOf(folder.getFileID())).delete();		
+					Bucket bucket = StorageClient.getInstance().bucket(); 
+					Blob blob = bucket.get(folder.getNameOnCloud());
+					blob.delete();
+				}
+			}
+		}
+	}
+
+	private void DeleteSharingAndSavingFile(int fileID) throws IOException, InterruptedException, ExecutionException {
+		for (var p : firestore.collection("SavingDocuments").get().get().getDocuments())
+		{
+			var file = p.toObject(SavingDocument.class);
+			if (file.getFileID() == fileID)
+			{
+				firestore.collection("SavingDocuments").document(file.getUserName() + "-" + String.valueOf(file.getFileID())).delete();
+			}
+		}
+		
+		for (var p : firestore.collection("SharingDocument").get().get().getDocuments())
+		{
+			var file = p.toObject(SharingDocument.class);
+			if (file.getFileID() == fileID)
+			{
+				firestore.collection("SharingDocument").document(file.getUserName() + "-" + String.valueOf(file.getFileID())).delete();
+			}
+		}		
+	}
+
 	public List<FileDTO> GetAllFolderOfUser(String userName) throws ExecutionException, InterruptedException {
 		List<FileDTO> files = new ArrayList<>();
 		ApiFuture<QuerySnapshot> query = firestore.collection("File").get();
@@ -182,13 +289,18 @@ public class FolderService {
 		return files.stream().sorted((t1,t2) -> t2.getCreatedTime().compareTo(t1.getCreatedTime())).collect(Collectors.toList());
 	}
 	
-	public String RestoreFile(int fileID, String userName) throws ExecutionException, InterruptedException {
+	public String RestoreFile(int fileID, String userName) throws ExecutionException, InterruptedException, IOException {
 		var file = firestore.collection("DeletedFile").document(String.valueOf(fileID)).get().get().toObject(File.class);
 		
 		if (file.getCreatedUser().equals(userName))
 		{
 			firestore.collection("File").document(String.valueOf(file.getFileID())).set(file);
 			firestore.collection("DeletedFile").document(String.valueOf(file.getFileID())).delete();
+			if (file.getType() == FileType.Folder)
+			{
+				ChangeStatusOfAllSharingAndSavingFiles(fileID, Status.Active);
+			}
+			ChangeStatus(fileID, Status.Active);
 			return "Success";
 		}
 		

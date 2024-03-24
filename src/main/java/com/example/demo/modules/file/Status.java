@@ -1,7 +1,7 @@
 package com.example.demo.modules.file;
 
-public enum SharingStatus {
+public enum Status {
 
 	Active,
-	Inactive
+	Inactive,
 }

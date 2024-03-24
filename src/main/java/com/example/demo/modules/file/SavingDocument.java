@@ -10,5 +10,6 @@ public class SavingDocument {
 	private int fileID;
 	private String userName;
 	private Date savingTime;
+	private Status status;
 	
 }
