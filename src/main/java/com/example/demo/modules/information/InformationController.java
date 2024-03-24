@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.example.demo.modules.email.EmailService;
 import com.example.demo.modules.jwt.JwtService;
@@ -66,7 +67,7 @@ public class InformationController {
 		return ResponseEntity.ok(activityLoggingService.getAllActivityLoggingOfUser(extractToken(httpRequest))); 
 	}
 	
-	@PostMapping("/changeInformation") // Information + Image
+	@PostMapping("/changeInformation")
 	public ResponseEntity<String> ChangeInformation(@RequestBody Information information, HttpServletRequest httpRequest)
 	{
 		var user = userService.GetUser(extractToken(httpRequest));
@@ -76,6 +77,18 @@ public class InformationController {
 		}
 		
 		return ResponseEntity.ok(informationService.ChangeInformation(information, extractToken(httpRequest))); 
+	}
+	
+	@PostMapping("/changeAvatar") 
+	public ResponseEntity<String> ChangeAvatar(@RequestParam("image") MultipartFile image, @RequestParam("infoID") int infoID, HttpServletRequest httpRequest)
+	throws ExecutionException, IOException, InterruptedException {	
+		var user = userService.GetUser(extractToken(httpRequest));
+		if (user.getInformationID() != infoID)
+		{
+			return ResponseEntity.ok("InformationID of information isn't belonged to your username.");
+		}
+		
+		return ResponseEntity.ok(informationService.ChangeAvatar(infoID, image, extractToken(httpRequest))); 
 	}
 	
 	@PostMapping("/changePassWord")

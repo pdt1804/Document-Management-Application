@@ -10,6 +10,7 @@ public class Information {
 	private int informationID;
 	private String fullName;
 	private String address;
+	private String nameOnCloud;
 	private String image;
 	private Date birthday;
 }
