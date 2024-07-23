@@ -1,4 +1,4 @@
-Document Management Application help you to store your important and necessary documents. You can store many types of document like .docx, .xlss, .pptx, .pdf, .mp4, .img, .jpg, .pnd, .txt... on our products.
+This Application help you to store your important and necessary documents. You can store many types of document like .docx, .xlss, .pptx, .pdf, .mp4, .img, .jpg, .pnd, .txt... on our products.
 
 Our product used:
 - Frontend: flutter to create friendly UIUX to help you utilize easily without trainning
